@@ -14,7 +14,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
-                        dir('terraform') {
+                        dir('Testing/terraform') {
                             sh '''
                               terraform init
                               terraform apply -auto-approve
@@ -27,7 +27,7 @@ pipeline {
 
         stage('Generate Ansible Inventory') {
             steps {
-                dir('ansible') {
+                dir('Testing/ansible') {
                     script {
                         sh './generate_inventory.sh'
                     }
@@ -37,7 +37,7 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
-                dir('ansible') {
+                dir('Testing/ansible') {
                     script {
                         sh '''
                           ansible-playbook playbook.yml -i inventory.txt
@@ -52,7 +52,7 @@ pipeline {
         always {
             script {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
-                    dir('terraform') {
+                    dir('Testing/terraform') {
                         sh '''
                           if [ -x "$(command -v terraform)" ]; then
                             terraform destroy -auto-approve
