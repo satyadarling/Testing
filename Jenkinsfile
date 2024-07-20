@@ -107,13 +107,16 @@ pipeline {
 
     post {
         always {
-            dir('Testing/terraform') {
-                script {
-                    sh '''
-                      terraform destroy -auto-approve
-                    '''
+            node {
+                dir('Testing/terraform') {
+                    script {
+                        sh '''
+                          terraform destroy -auto-approve
+                        '''
+                    }
                 }
             }
         }
     }
 }
+
