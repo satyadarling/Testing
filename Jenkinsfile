@@ -3,17 +3,11 @@ pipeline {
         label 'amazon-slave'
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git url: 'https://github.com/satyadarling/Testing.git'
-            }
-        }
 
         stage('Terraform Init and Apply') {
             steps {
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS_KEY']]) {
                         dir('Testing/terraform') {
                             sh '''
                               terraform init
