@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'amazon_slave'
+        label 'amazon-slave'
     }
 
     environment {
@@ -45,6 +45,22 @@ pipeline {
             }
         }
 
+        stage('Install Ansible') {
+            steps {
+                script {
+                    sh '''
+                      if ! [ -x "$(command -v ansible)" ]; then
+                        echo "Ansible not found. Installing..."
+                        sudo apt update
+                        sudo apt install -y ansible
+                      else
+                        echo "Ansible is already installed."
+                      fi
+                    '''
+                }
+            }
+        }
+
         stage('Generate Ansible Inventory') {
             steps {
                 dir('ansible') {
@@ -59,7 +75,9 @@ pipeline {
             steps {
                 dir('ansible') {
                     script {
-                        ansiblePlaybook playbook: 'playbook.yml', inventory: 'inventory.txt'
+                        sh '''
+                          ansible-playbook playbook.yml -i inventory.txt
+                        '''
                     }
                 }
             }
@@ -78,3 +96,4 @@ pipeline {
         }
     }
 }
+
