@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'amazon_slave'
+        label 'amazon-slave'
     }
 
     environment {
