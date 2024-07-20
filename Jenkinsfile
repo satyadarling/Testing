@@ -4,35 +4,14 @@ pipeline {
     }
 
     environment {
-        TF_VAR_aws_access_key = credentials('AWS_ACCESS_KEY_ID')
-        TF_VAR_aws_secret_key = credentials('AWS_SECRET_ACCESS_KEY')
+        TF_VAR_aws_access_key = credentials('aws-credentials').accessKey
+        TF_VAR_aws_secret_key = credentials('aws-credentials').secretKey
     }
 
     stages {
-        stage('Install Git') {
-            steps {
-                script {
-                    sh '''
-                      if ! [ -x "$(command -v git)" ]; then
-                        echo "Git not found. Installing..."
-                        sudo yum update -y
-                        sudo yum install git -y
-                      else
-                        echo "Git is already installed."
-                      fi
-                    '''
-                }
-            }
-        }
-
         stage('Checkout') {
             steps {
-                script {
-                    // Cloning the Git repository
-                    sh '''
-                      git clone https://github.com/satyadarling/Testing.git
-                    '''
-                }
+                git 'https://github.com/satyadarling/Testing.git'
             }
         }
 
@@ -45,6 +24,7 @@ pipeline {
                         curl -LO https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
                         unzip terraform_1.0.0_linux_amd64.zip
                         sudo mv terraform /usr/local/bin/
+                        sudo chmod +x /usr/local/bin/terraform
                       else
                         echo "Terraform is already installed."
                       fi
@@ -55,12 +35,14 @@ pipeline {
 
         stage('Terraform Init and Apply') {
             steps {
-                dir('Testing/terraform') {
-                    script {
-                        sh '''
-                          terraform init
-                          terraform apply -auto-approve
-                        '''
+                script {
+                    withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        dir('terraform') {
+                            sh '''
+                              terraform init
+                              terraform apply -auto-approve
+                            '''
+                        }
                     }
                 }
             }
@@ -84,7 +66,7 @@ pipeline {
 
         stage('Generate Ansible Inventory') {
             steps {
-                dir('Testing/ansible') {
+                dir('ansible') {
                     script {
                         sh './generate_inventory.sh'
                     }
@@ -94,7 +76,7 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
-                dir('Testing/ansible') {
+                dir('ansible') {
                     script {
                         sh '''
                           ansible-playbook playbook.yml -i inventory.txt
@@ -108,9 +90,8 @@ pipeline {
     post {
         always {
             script {
-                // Use a node block inside the post section to access the workspace
-                node('amazon-slave') {
-                    dir('Testing/terraform') {
+                withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('terraform') {
                         sh '''
                           terraform destroy -auto-approve
                         '''
