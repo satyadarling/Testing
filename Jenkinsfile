@@ -10,10 +10,20 @@ pipeline {
             }
         }
 
-        stage('Install Terraform') {
+        stage('Install Git and Terraform') {
             steps {
                 script {
                     sh '''
+                      # Install Git if not already installed
+                      if ! [ -x "$(command -v git)" ]; then
+                        echo "Git not found. Installing..."
+                        sudo yum update -y
+                        sudo yum install -y git
+                      else
+                        echo "Git is already installed."
+                      fi
+
+                      # Install Terraform if not already installed
                       if ! [ -x "$(command -v terraform)" ]; then
                         echo "Terraform not found. Installing..."
                         curl -LO https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
@@ -31,11 +41,8 @@ pipeline {
         stage('Terraform Init and Apply') {
             steps {
                 script {
-                    withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                        env.TF_VAR_aws_access_key = env.AWS_ACCESS_KEY_ID
-                        env.TF_VAR_aws_secret_key = env.AWS_SECRET_ACCESS_KEY
-
-                        dir('terraform') {
+                    dir('terraform') {
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                             sh '''
                               terraform init
                               terraform apply -auto-approve
@@ -88,11 +95,8 @@ pipeline {
     post {
         always {
             script {
-                withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    env.TF_VAR_aws_access_key = env.AWS_ACCESS_KEY_ID
-                    env.TF_VAR_aws_secret_key = env.AWS_SECRET_ACCESS_KEY
-
-                    dir('terraform') {
+                dir('terraform') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS_KEY']]) {
                         sh '''
                           terraform destroy -auto-approve
                         '''
