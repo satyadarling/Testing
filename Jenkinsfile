@@ -107,16 +107,7 @@ pipeline {
 
     post {
         always {
-            node {
+            // Use a node block inside the post section to access the workspace
+            node('amazon-slave') {
                 dir('Testing/terraform') {
                     script {
-                        sh '''
-                          terraform destroy -auto-approve
-                        '''
-                    }
-                }
-            }
-        }
-    }
-}
-
