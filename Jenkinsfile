@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'amazon_slave'
+    }
 
     environment {
         TF_VAR_aws_access_key = credentials('AWS_ACCESS_KEY_ID')
@@ -9,7 +11,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/satyadarling/Testing.git'
+                git 'https://your-repo-url.git'
             }
         }
 
@@ -76,4 +78,3 @@ pipeline {
         }
     }
 }
-
