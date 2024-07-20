@@ -3,11 +3,6 @@ pipeline {
         label 'amazon-slave'
     }
 
-    environment {
-        TF_VAR_aws_access_key = credentials('aws-credentials').accessKey
-        TF_VAR_aws_secret_key = credentials('aws-credentials').secretKey
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -37,6 +32,9 @@ pipeline {
             steps {
                 script {
                     withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        env.TF_VAR_aws_access_key = env.AWS_ACCESS_KEY_ID
+                        env.TF_VAR_aws_secret_key = env.AWS_SECRET_ACCESS_KEY
+
                         dir('terraform') {
                             sh '''
                               terraform init
@@ -91,6 +89,9 @@ pipeline {
         always {
             script {
                 withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    env.TF_VAR_aws_access_key = env.AWS_ACCESS_KEY_ID
+                    env.TF_VAR_aws_secret_key = env.AWS_SECRET_ACCESS_KEY
+
                     dir('terraform') {
                         sh '''
                           terraform destroy -auto-approve
