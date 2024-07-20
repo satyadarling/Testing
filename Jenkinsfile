@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'amazon-slave'
+        label 'amazon_slave'
     }
 
     environment {
@@ -9,9 +9,30 @@ pipeline {
     }
 
     stages {
+        stage('Install Git') {
+            steps {
+                script {
+                    sh '''
+                      if ! [ -x "$(command -v git)" ]; then
+                        echo "Git not found. Installing..."
+                        sudo yum update -y
+                        sudo yum install git -y
+                      else
+                        echo "Git is already installed."
+                      fi
+                    '''
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
-                git 'https://your-repo-url.git'
+                script {
+                    // Cloning the Git repository
+                    sh '''
+                      git clone https://github.com/satyadarling/Testing.git
+                    '''
+                }
             }
         }
 
@@ -34,7 +55,7 @@ pipeline {
 
         stage('Terraform Init and Apply') {
             steps {
-                dir('terraform') {
+                dir('Testing/terraform') {
                     script {
                         sh '''
                           terraform init
@@ -51,8 +72,8 @@ pipeline {
                     sh '''
                       if ! [ -x "$(command -v ansible)" ]; then
                         echo "Ansible not found. Installing..."
-                        sudo apt update
-                        sudo apt install -y ansible
+                        sudo yum update -y
+                        sudo amazon-linux-extras install ansible2 -y
                       else
                         echo "Ansible is already installed."
                       fi
@@ -63,7 +84,7 @@ pipeline {
 
         stage('Generate Ansible Inventory') {
             steps {
-                dir('ansible') {
+                dir('Testing/ansible') {
                     script {
                         sh './generate_inventory.sh'
                     }
@@ -73,7 +94,7 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
-                dir('ansible') {
+                dir('Testing/ansible') {
                     script {
                         sh '''
                           ansible-playbook playbook.yml -i inventory.txt
@@ -86,7 +107,7 @@ pipeline {
 
     post {
         always {
-            dir('terraform') {
+            dir('Testing/terraform') {
                 script {
                     sh '''
                       terraform destroy -auto-approve
@@ -96,4 +117,3 @@ pipeline {
         }
     }
 }
-
