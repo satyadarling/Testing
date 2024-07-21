@@ -3,11 +3,6 @@ pipeline {
         label 'amazon-slave'
     }
 
-    environment {
-        AWS_ACCESS_KEY_ID = credentials('AWS_KEY').accessKey
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_KEY').secretKey
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -19,10 +14,17 @@ pipeline {
             steps {
                 script {
                     dir('my_testing/terraform') {
-                        sh '''
-                          terraform init
-                          terraform apply -auto-approve
-                        '''
+                        withCredentials([[
+                            $class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: 'AWS_KEY',
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ]]) {
+                            sh '''
+                              terraform init
+                              terraform apply -auto-approve
+                            '''
+                        }
                     }
                 }
             }
@@ -42,9 +44,16 @@ pipeline {
             steps {
                 dir('my_testing/ansible') {
                     script {
-                        sh '''
-                          ansible-playbook playbook.yml -i inventory.txt
-                        '''
+                        withCredentials([[
+                            $class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: 'AWS_KEY',
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ]]) {
+                            sh '''
+                              ansible-playbook playbook.yml -i inventory.txt
+                            '''
+                        }
                     }
                 }
             }
@@ -52,14 +61,4 @@ pipeline {
     }
 
     post {
-        always {
-            script {
-                dir('my_testing/terraform') {
-                    sh '''
-                      terraform destroy -auto-approve
-                    '''
-                }
-            }
-        }
-    }
-}
+    
