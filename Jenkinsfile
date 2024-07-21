@@ -13,7 +13,7 @@ pipeline {
         stage('Terraform Init and Apply') {
             steps {
                 script {
-                    dir('my_testing/terraform') {
+                    dir('terraform') {
                         withCredentials([[
                             $class: 'AmazonWebServicesCredentialsBinding',
                             credentialsId: 'AWS_KEY',
@@ -32,33 +32,10 @@ pipeline {
 
         stage('Generate Ansible Inventory') {
             steps {
-                dir('my_testing/ansible') {
+                dir('ansible') {
                     script {
                         sh './generate_inventory.sh'
                     }
                 }
             }
         }
-
-        stage('Run Ansible Playbook') {
-            steps {
-                dir('my_testing/ansible') {
-                    script {
-                        withCredentials([[
-                            $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: 'AWS_KEY',
-                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                        ]]) {
-                            sh '''
-                              ansible-playbook playbook.yml -i inventory.txt
-                            '''
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    post {
-    
